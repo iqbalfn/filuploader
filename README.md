@@ -1,3 +1,7 @@
-# bootstrap-confirm
+# FileUploader
 
-The helper that show modal confirmation on clicking a link or submitting a form to ask for user awarness about the action.
+Super simple js class for ajax file uploader.
+
+## TODO
+
+1. Support chunk upload
