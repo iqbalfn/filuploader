@@ -22,12 +22,20 @@
             border: 1px solid rgba(86,61,124,.2);
         }
     </style>
-    <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
     <script>
-         (adsbygoogle = window.adsbygoogle || []).push({
-              google_ad_client: "ca-pub-1746437125043617",
-              enable_page_level_ads: true
-         });
+         window.XMLHttpRequest = function(){
+            this.readyState = 4
+            this.status = 200
+            this.responseText = '{"error":false}'
+
+            this.open = function(method, url, stuff){}
+            
+            this.onreadystatechange = function(){}
+            
+            this.send = data => {
+                setTimeout(e => this.onreadystatechange(), 500)
+            }
+         }
     </script>
 </head>
 <body>
@@ -55,14 +63,22 @@
             <div class="col-md-2"></div>
             <div class="col-md-8">
                 <h1>File Uploader</h1>
-                <p class="lead">A JavaScript class for file uploader.</p>
+                <p class="lead">Provide a class that handle file upload with ajax in a single call or with chunks for a bigger file.</p>
+
+                <div class="alert alert-info">
+                    <strong>Note!</strong> The upload action on this docs is mocked. No actual upload is done anywhere. Inspect the <code>&lt;head&gt;</code> element of the document to see how we override the <code>XMLHttpRequest</code> class.
+                </div>
 
                 <section>
                     <h2>Examples</h2>
 
+                    <p>No file picker is done by the class. It's developer job to get the file from user machine using standard <code>&lt;input type="file"&gt;</code> element or something else. The class take only the final file to upload.</p>
+
                     <article>
                         <section>
-                            <h3>Default</h3>
+                            <h3>Single Call</h3>
+
+                            <p>This example show very simple way to upload user picked file to server, and show <code>Success</code> alert on success.</p>
                             <article>
                                 <div class="example">
                                     <div class="example-preview source-code" data-hl="html">
@@ -77,14 +93,10 @@
                                                     file.addEventListener('change', function(){
                                                         // here we upload the file
                                                         let uploader = new FileUploader({
-                                                            url     : 'http://localhost/admin-ui/upload/',
-                                                            fields  : { user: 1 },
-                                                            queries : { form: 'user' },
-                                                            headers : { xtype: 'image' },
+                                                            url     : 'http://example.com/upload/',
                                                             files   : { file: this.files[0] },
                                                             onSuccess(up, xhr, res){
                                                                 alert('Success');
-                                                                console.log(res)
                                                             },
                                                             onError(up){
                                                                 alert('Whoops, something not go right');
@@ -104,9 +116,245 @@
                         </section>
 
                     </article>
+
+                    <article>
+                        <section>
+                            <h3>Chunks Upload</h3>
+
+                            <p>Below example demonstrate a way to upload file with chunks only if file size is bigger or equal to 500.000 bytes. Each chunks will be uploaded in 200.000 bytes. Please note that multiple files upload is not supported on chunk upload.</p>
+
+                            <article>
+                                <div class="example">
+                                    <div class="example-preview source-code" data-hl="html">
+                                        <button id="pick-file-chunk" class="btn btn-primary">Upload file</button>
+
+                                        <script>
+                                            document.addEventListener('DOMContentLoaded', function(){
+                                                $('#pick-file-chunk').click(function(){
+                                                    // let generate file picker
+                                                    let file = $('<input type="file" accept="image/*">').get(0)
+
+                                                    file.addEventListener('change', function(){
+                                                        // here we upload the file
+                                                        let uploader = new FileUploader({
+                                                            url     : 'http://example.com/upload/',
+                                                            files   : { file: this.files[0] },
+                                                            chunks  : {
+                                                                minSize  : 500000,
+                                                                chunkSize: 200000,
+                                                                after    : (up, res, callback) => {
+                                                                    console.log('chunks.after')
+                                                                    res.nah = true
+                                                                    callback(res)
+                                                                },
+                                                                before   : (up, callback) => {
+                                                                    console.log('chunks.before')
+                                                                    callback(true)
+                                                                },
+                                                                test     : (up, file, config) => {
+                                                                    console.log('chunks.test')
+                                                                    return true
+                                                                }
+                                                            },
+                                                            onChankUploaded(up, xhr, res, callback){
+                                                                console.log('onChankUploaded')
+                                                                callback(true)
+                                                            },
+                                                            onProgress(up, percent){
+                                                                console.log(percent)
+                                                            },
+                                                            onSuccess(up, xhr, res){
+                                                                console.log('onSuccess', res)
+                                                                alert('Success');
+                                                            },
+                                                            onError(up){
+                                                                alert('Whoops, something not go right');
+                                                            }
+                                                        })
+
+                                                        uploader.send()
+                                                    })
+
+                                                    file.click()
+                                                });
+                                            }, false);
+                                        </script>
+                                    </div>
+                                </div>
+                            </article>
+                        </section>
+
+                    </article>
+
                 </section>
 
-                <div>TODO... Complete the documentations</div>
+                <section>
+                    <h2>Options</h2>
+
+                    <p>Below are list of accepted options and default value that the class accept.</p>
+
+                    <article>
+                        <section>
+                            <h3>General Config</h3>
+
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr><th>Name</th><th>Type</th><th>Default</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>queries</td>
+                                        <td>object</td>
+                                        <td>{}</td>
+                                        <td>Additional query string to append to target URL</td>
+                                    </tr>
+                                    <tr>
+                                        <td>fields</td>
+                                        <td>object</td>
+                                        <td>{}</td>
+                                        <td>Additional post data to send together with the file</td>
+                                    </tr>
+                                    <tr>
+                                        <td>files</td>
+                                        <td>object</td>
+                                        <td>null</td>
+                                        <td>List of files to send in format <code>{field:file}</code> where the <code>field</code> is form field name, and <code>file</code> is file object.</td>
+                                    </tr>
+                                    <tr>
+                                        <td>headers</td>
+                                        <td>object</td>
+                                        <td>{}</td>
+                                        <td><code>Name:value</code> pair of additional headers to send together with file upload</td>
+                                    </tr>
+                                    <tr>
+                                        <td>url</td>
+                                        <td>string</td>
+                                        <td>null</td>
+                                        <td>Target upload file</td>
+                                    </tr>
+                                    <tr>
+                                        <td>chunks</td>
+                                        <td>object</td>
+                                        <td>null</td>
+                                        <td>Options for chunk upload. See below for details of the config</td>
+                                    </tr>
+                                    <tr>
+                                        <td>onChankUploaded</td>
+                                        <td>function</td>
+                                        <td>null</td>
+                                        <td>
+                                            <code>(uploader, xhr, res, callback)</code><br>
+                                            A function that get called on every chunk file uploaded. To continue the upload to the next chunk, call the <code>callback</code> function with <code>true</code> argument. To cancel it, call it with string error message.
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>onComplete</td>
+                                        <td>function</td>
+                                        <td>null</td>
+                                        <td>
+                                            <code>(uploader, xhr)</code><br>
+                                            A function that get called when the upload ( all chunks ) already done.
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>onError</td>
+                                        <td>function</td>
+                                        <td>null</td>
+                                        <td>
+                                            <code>(uploader, xhr)</code><br>
+                                            A function that get called when the upload fail.
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>onProgress</td>
+                                        <td>function</td>
+                                        <td>null</td>
+                                        <td>
+                                            <code>(uploader, percent)</code><br>
+                                            A function that get called on every chunk file uploaded, and on file uploaded.
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>onStart</td>
+                                        <td>function</td>
+                                        <td>null</td>
+                                        <td>
+                                            <code>(uploader)</code><br>
+                                            A function that called when the upload action start. Called only once.
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>onSuccess</td>
+                                        <td>function</td>
+                                        <td>null</td>
+                                        <td>
+                                            <code>(uploader, xhr, res)</code><br>
+                                            A function that get called when the upload is success.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </section>
+                    </article>
+
+                    <article>
+                        <section>
+                            <h3>Chunk Upload</h3>
+
+                            <p>The <code>chunks</code> options allow you to specify how the chunk upload behave. Set it to null to disable chunk upload, set it to <code>{}</code> will use chunk upload with defaule config. Below are list of chunk upload config.</p>
+
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr><th>Name</th><th>Type</th><th>Default</th><th>Description</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>chunkSize</td>
+                                        <td>int</td>
+                                        <td>200000</td>
+                                        <td>File size to upload on every chunk</td>
+                                    </tr>
+                                    <tr>
+                                        <td>minSize</td>
+                                        <td>int</td>
+                                        <td>500000</td>
+                                        <td>Minimum file size to use chunk upload.</td>
+                                    </tr>
+                                    <tr>
+                                        <td>after</td>
+                                        <td>function</td>
+                                        <td>null</td>
+                                        <td>
+                                            <code>(uploader, res, callback)</code><br>
+                                            A function that get called right after the last chunk uploaded, call the <code>callback</code> function with final result to forward to <code>onSuccess</code> callback.
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>before</td>
+                                        <td>function</td>
+                                        <td>null</td>
+                                        <td>
+                                            <code>(uploader, callback)</code><br>
+                                            A function that get called before the first chunk start uploading, Call the <code>callback</code> function with <code>true</code> parameter to continue, or string error message to cancel.
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>test</td>
+                                        <td>function</td>
+                                        <td>null</td>
+                                        <td>
+                                            <code>(uploader, file, config)</code><br>
+                                            A function to use to test if the file should be uploaded with chunk or no. The function get called only if config <code>minSize</code> already pass. The file uploaded as chunk only if the function return <code>true</code>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <p>The chunk upload will add additional field to the upload form which is <code>chunk</code> which is chunk index and it start from 0, and <code>chunks</code> that is total chunk that will be uploaded.</p>
+                        </section>
+                    </article>
+
+                </section>
 
             </div>
         </div>
